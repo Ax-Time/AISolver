@@ -1,13 +1,16 @@
 package csp.sudoku;
 
 import csp.base_classes.CSP;
+import csp.base_classes.Constraint;
+import csp.base_classes.Variable;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.*;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-public class SudokuCSP extends CSP<SudokuVariable, Integer> {
+public class SudokuCSP extends CSP<Integer> {
     public SudokuCSP(String filePath) throws FileNotFoundException {
         super();
 
@@ -37,17 +40,23 @@ public class SudokuCSP extends CSP<SudokuVariable, Integer> {
                 String varName = "";
                 varName += (char)((int)('A') + i);
                 varName += (char)((int)'1' + j);
-                SudokuVariable newVar = new SudokuVariable(varName, i, j);
+                Variable<Integer> newVar = new Variable<>(varName);
                 variables.add(newVar);
                 if(currChar != '.'){
                     // Reduce the domain of the variable to only one element: the one that has been preset
                     int value = ((int)(currChar)) - ((int)('0'));
-                    newVar.setDomain(new HashSet<>(Arrays.asList(value)));
+                    newVar.setDomain(new HashSet<>(List.of(value)));
+                }
+                else{
+                    // Set the domain to {1,2,3,4,5,6,7,8,9}
+                    newVar.setDomain(new HashSet<>(Arrays.asList(1,2,3,4,5,6,7,8,9)));
                 }
             }
         }
 
         // Generate constraints
+        BiFunction<Integer, Integer, Boolean> sudokuConstraintTester = (value1, value2) -> !Objects.equals(value1, value2);
+
         // Row constraints
         for(int row = 0; row < 9; row++){
             for(int col1 = 0; col1 < 9; col1++){
@@ -55,15 +64,16 @@ public class SudokuCSP extends CSP<SudokuVariable, Integer> {
                     int finalCol1 = col1;
                     int finalRow = row;
                     int finalCol2 = col2;
-                    constraints.add(new SudokuConstraint(
+                    constraints.add(new Constraint<>(
                             variables.stream()
-                                    .filter(var -> var.getRow() == finalRow && var.getCol() == finalCol1)
+                                    .filter(var -> getSudokuRow(var) == finalRow && getSudokuCol(var) == finalCol1)
                                     .collect(Collectors.toList())
                                     .get(0),
                             variables.stream()
-                                    .filter(var -> var.getRow() == finalRow && var.getCol() == finalCol2)
+                                    .filter(var -> getSudokuRow(var) == finalRow && getSudokuCol(var) == finalCol2)
                                     .collect(Collectors.toList())
-                                    .get(0)
+                                    .get(0),
+                            sudokuConstraintTester
                     ));
                 }
             }
@@ -76,15 +86,16 @@ public class SudokuCSP extends CSP<SudokuVariable, Integer> {
                     int finalCol = col;
                     int finalRow1 = row1;
                     int finalRow2 = row2;
-                    constraints.add(new SudokuConstraint(
+                    constraints.add(new Constraint<>(
                             variables.stream()
-                                    .filter(var -> var.getRow() == finalRow1 && var.getCol() == finalCol)
+                                    .filter(var -> getSudokuRow(var) == finalRow1 && getSudokuCol(var) == finalCol)
                                     .collect(Collectors.toList())
                                     .get(0),
                             variables.stream()
-                                    .filter(var -> var.getRow() == finalRow2 && var.getCol() == finalCol)
+                                    .filter(var -> getSudokuRow(var) == finalRow2 && getSudokuCol(var) == finalCol)
                                     .collect(Collectors.toList())
-                                    .get(0)
+                                    .get(0),
+                            sudokuConstraintTester
                     ));
                 }
             }
@@ -93,14 +104,14 @@ public class SudokuCSP extends CSP<SudokuVariable, Integer> {
         // Quadrant constraints (don't duplicate constraints for the row and the columns
         for(int q_row = 0; q_row < 3; q_row++){
             for(int q_col = 0; q_col < 3; q_col++){
-                List<SudokuVariable> quadrantVariables = new ArrayList<>(8);
+                List<Variable<Integer>> quadrantVariables = new ArrayList<>(8);
                 for(int row = 3*q_row; row < 3*(q_row+1); row++){
                     for(int col = 3*q_col; col < 3*(q_col+1); col++){
                         int finalRow = row;
                         int finalCol = col;
                         quadrantVariables.add(
                                 variables.stream()
-                                        .filter(var -> var.getRow() == finalRow && var.getCol() == finalCol)
+                                        .filter(var -> getSudokuRow(var) == finalRow && getSudokuCol(var) == finalCol)
                                         .collect(Collectors.toList())
                                         .get(0)
                         );
@@ -110,15 +121,26 @@ public class SudokuCSP extends CSP<SudokuVariable, Integer> {
                 for(int i = 0; i < quadrantVariables.size(); i++){
                     for(int j = i + 1; j < quadrantVariables.size(); j++){
                         if( // Different row and different column (if row or col is the same the constraint has already been created)
-                                quadrantVariables.get(i).getRow() != quadrantVariables.get(j).getRow() &&
-                                quadrantVariables.get(i).getCol() != quadrantVariables.get(j).getCol()
+                                getSudokuRow(quadrantVariables.get(i)) != getSudokuRow(quadrantVariables.get(j)) &&
+                                getSudokuCol(quadrantVariables.get(i)) != getSudokuCol(quadrantVariables.get(j))
                         )
-                        constraints.add(new SudokuConstraint(quadrantVariables.get(i), quadrantVariables.get(j)));
+                        constraints.add(new Constraint<>(
+                                quadrantVariables.get(i),
+                                quadrantVariables.get(j),
+                                sudokuConstraintTester
+                                )
+                        );
                     }
                 }
             }
         }
     }
 
+    private int getSudokuRow(Variable<Integer> sudokuVar){
+        return (int)sudokuVar.getName().toCharArray()[0] - (int)'A';
+    }
 
+    private int getSudokuCol(Variable<Integer> sudokuVar){
+        return (int)sudokuVar.getName().toCharArray()[1] - (int)'1';
+    }
 }

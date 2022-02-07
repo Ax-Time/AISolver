@@ -6,9 +6,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-public class CSP<VarChild extends Variable<T>, T> {
-    protected Set<VarChild> variables;
-    protected List<Constraint<VarChild, T>> constraints;
+public class CSP<T> {
+    protected Set<Variable<T>> variables;
+    protected List<Constraint<T>> constraints;
 
     public CSP(){
         variables = new HashSet<>();
@@ -19,7 +19,7 @@ public class CSP<VarChild extends Variable<T>, T> {
      *
      * @param variable the variable to be added to the csp
      */
-    public void addVariable(VarChild variable){
+    public void addVariable(Variable<T> variable){
         variables.add(variable);
     }
 
@@ -27,15 +27,15 @@ public class CSP<VarChild extends Variable<T>, T> {
      *
      * @param constraint the constraint to be added to the csp
      */
-    public void addBinaryConstraint(Constraint<VarChild, T> constraint){
+    public void addBinaryConstraint(Constraint<T> constraint){
         constraints.add(constraint);
     }
 
-    public Set<VarChild> getVariables() {
+    public Set<Variable<T>> getVariables() {
         return new HashSet<>(variables);
     }
 
-    public List<Constraint<VarChild, T>> getConstraints() {
+    public List<Constraint<T>> getConstraints() {
         return new LinkedList<>(constraints);
     }
 }

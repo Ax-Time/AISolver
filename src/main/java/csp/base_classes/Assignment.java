@@ -5,8 +5,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class Assignment<VarChild extends Variable<T>, T>{
-    protected Map<VarChild, T> variableValueMap;
+public class Assignment<T>{
+    protected Map<Variable<T>, T> variableValueMap;
 
     public Assignment() {
         this.variableValueMap = new HashMap<>();
@@ -17,7 +17,7 @@ public class Assignment<VarChild extends Variable<T>, T>{
      * @param var the variable to be assigned
      * @param value the value to be assigned to var
      */
-    public void assign(VarChild var, T value){
+    public void assign(Variable<T> var, T value){
         variableValueMap.put(var, value);
     }
 
@@ -25,7 +25,7 @@ public class Assignment<VarChild extends Variable<T>, T>{
      * Removes any assignment made to var
      * @param var the variable to "unAssign"
      */
-    public void unAssign(VarChild var){
+    public void unAssign(Variable<T> var){
         variableValueMap.remove(var);
     }
 
@@ -33,7 +33,7 @@ public class Assignment<VarChild extends Variable<T>, T>{
      *
      * @return a set containing all the assigned variables
      */
-    public Set<VarChild> getAssignedVariables() {
+    public Set<Variable<T>> getAssignedVariables() {
         return new HashSet<>(variableValueMap.keySet());
     }
 
@@ -43,17 +43,17 @@ public class Assignment<VarChild extends Variable<T>, T>{
      * @return the value assigned to that variable
      * @throws IllegalArgumentException if the variable var is not assigned
      */
-    public T getValueFor(VarChild var) throws IllegalArgumentException{
+    public T getValueFor(Variable<T> var) throws IllegalArgumentException{
         if(variableValueMap.get(var) == null) throw new IllegalArgumentException();
         return variableValueMap.get(var);
     }
 
     @Override
     public String toString() {
-        String s = "";
-        for(VarChild var : variableValueMap.keySet()){
-            s += "{ " + var.toString() + " = " + variableValueMap.get(var) + " }\n";
+        StringBuilder s = new StringBuilder();
+        for(Variable<T> var : variableValueMap.keySet()){
+            s.append("{ ").append(var.toString()).append(" = ").append(variableValueMap.get(var)).append(" }\n");
         }
-        return s;
+        return s.toString();
     }
 }

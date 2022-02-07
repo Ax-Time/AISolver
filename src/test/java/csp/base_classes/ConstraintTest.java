@@ -11,7 +11,7 @@ class ConstraintTest {
         Variable<Integer> v1 = new Variable<>("v1");
         Variable<Integer> v2 = new Variable<>("v2");
 
-        Constraint<Variable<Integer>, Integer> c1, c2, c3;
+        Constraint<Integer> c1, c2, c3;
 
         c1 = new Constraint<>(
                 v1, v2,
@@ -34,7 +34,7 @@ class ConstraintTest {
                 }
         );
 
-        Assignment<Variable<Integer>, Integer> assignment1, assignment2, assignment3;
+        Assignment<Integer> assignment1, assignment2, assignment3;
 
         assignment1 = new Assignment<>();
         assignment2 = new Assignment<>();

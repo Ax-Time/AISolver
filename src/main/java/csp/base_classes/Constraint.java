@@ -7,12 +7,12 @@ import java.util.function.BiFunction;
  * In this implementation a constraint is a binary constraint. Remember that every csp can be reduced to an equivalent csp with only
  * binary constraints.
  */
-public class /* pure */ Constraint<VarChild extends Variable<T>, T> {
-    private final VarChild var1;
-    private final VarChild var2;
+public class /* pure */ Constraint<T> {
+    private final Variable<T> var1;
+    private final Variable<T> var2;
     private final BiFunction<T, T, Boolean> constraintTester;
 
-    public Constraint(VarChild var1, VarChild var2, BiFunction<T, T, Boolean> constraintTester) {
+    public Constraint(Variable<T> var1, Variable<T> var2, BiFunction<T, T, Boolean> constraintTester) {
         this.var1 = var1;
         this.var2 = var2;
         this.constraintTester = constraintTester;
@@ -23,8 +23,8 @@ public class /* pure */ Constraint<VarChild extends Variable<T>, T> {
      * @param assignment the assignment to be tested
      * @return true if the assignment satisfies the constraint, false otherwise
      */
-    public boolean test(Assignment<VarChild, T> assignment){
-        Set<VarChild> assignedVariables = assignment.getAssignedVariables();
+    public boolean test(Assignment<T> assignment){
+        Set<Variable<T>> assignedVariables = assignment.getAssignedVariables();
         boolean containsVar1 = assignedVariables.contains(var1);
         boolean containsVar2 = assignedVariables.contains(var2);
         if(containsVar1 && containsVar2){
@@ -33,11 +33,11 @@ public class /* pure */ Constraint<VarChild extends Variable<T>, T> {
         return true;
     }
 
-    public VarChild getVar1() {
+    public Variable<T> getVar1() {
         return var1;
     }
 
-    public VarChild getVar2() {
+    public Variable<T> getVar2() {
         return var2;
     }
 
