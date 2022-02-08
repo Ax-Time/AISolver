@@ -13,6 +13,7 @@ public class BFS_Solver {
     public List<Action> solve(State startingState) throws NoSolutionException {
         List<Action> actionsToSolution = new LinkedList<>();
         Node goalNode = findGoal(startingState);
+        if(goalNode == null) throw new NoSolutionException();
         while(goalNode != null){
             if(goalNode.getActionToGetHere() != null) actionsToSolution.add(0, goalNode.getActionToGetHere());
             goalNode = goalNode.getFather();
