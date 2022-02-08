@@ -1,4 +1,4 @@
-package csp.base_classes.csp_solvers;
+package csp.solvers;
 
 import csp.base_classes.Assignment;
 import csp.base_classes.CSP;
@@ -11,7 +11,13 @@ import java.util.stream.Collectors;
 public class BacktrackingSolver<T> {
     public Assignment<T> solve(CSP<T> csp){
         Set<Variable<T>> variables = new HashSet<>();
+
         csp.getVariables().forEach(var -> variables.add(var.clone()));
+        /*
+        for(Variable<T> var : csp.getVariables()){
+            variables.add(var.clone());
+        }
+         */
 
         Assignment<T> startingAssignment = new Assignment<>();
         for(Variable<T> var : variables){
@@ -28,7 +34,7 @@ public class BacktrackingSolver<T> {
             List<Constraint<T>> constraints,
             Assignment<T> assignment)
     {
-        // Display progress info
+        // Display progress info:
         // System.out.println("Progress: " + (int)(assignment.getAssignedVariables().size() / (float)variables.size() * 100.0) + "%");
         if(assignment.getAssignedVariables().equals(variables)) return assignment; // Assignment is complete
         Variable<T> var = selectUnassignedVariable(variables, constraints, assignment);
@@ -40,11 +46,18 @@ public class BacktrackingSolver<T> {
                 var.setDomain(new HashSet<>(List.of(value)));
 
                 Set<Variable<T>> oldVariables = new HashSet<>();
+
                 variables.forEach(v -> oldVariables.add(v.clone()));
+                /*
+                for(Variable<T> v : variables){
+                    oldVariables.add(v.clone());
+                }*/
+
                 if (AC3(variables, constraints)) {
                     Assignment<T> result = backtrack(variables, constraints, assignment);
                     if (result != null) return result;
                 }
+
                 variables = oldVariables;
                 var.setDomain(oldVarDomain);
             }
@@ -75,6 +88,14 @@ public class BacktrackingSolver<T> {
         Set<Variable<T>> unassignedVariables = variables.stream()
                 .filter(var -> !assignment.getAssignedVariables().contains(var))
                 .collect(Collectors.toSet());
+        /*
+        Set<Variable<T>> unassignedVariables = new HashSet<>();
+        for(Variable<T> var : variables){
+            if(!assignment.getAssignedVariables().contains(var)){
+                unassignedVariables.add(var);
+            }
+        }
+         */
 
         // Apply Minimum-Remaining-Values heuristic (pick the variable with the smallest domain)
         OptionalInt minDomainSize = unassignedVariables.stream()
@@ -84,9 +105,26 @@ public class BacktrackingSolver<T> {
         unassignedVariables = unassignedVariables.stream()
                 .filter(var -> var.getCurrentDomain().size() == minDomainSize.getAsInt())
                 .collect(Collectors.toSet());
+         /*
+            Integer minDomainSize = null;
+        for(Variable<T> var : unassignedVariables){
+            if(minDomainSize == null){
+                minDomainSize = var.getCurrentDomain().size();
+            }
+            else{
+                int varDomainSize = var.getCurrentDomain().size();
+                minDomainSize = varDomainSize < minDomainSize ? varDomainSize : minDomainSize;
+            }
+        }
+        for(Variable<T> var : unassignedVariables){
+            if(var.getCurrentDomain().size() > minDomainSize) unassignedVariables.remove(var);
+        }
+        */
+        
 
         if(unassignedVariables.size() > 1){
             // Apply Degree heuristic to break ties (pick the variable involved in the largest number of constraints)
+
             OptionalInt largestNumberOfConstraints = unassignedVariables.stream()
                     .mapToInt(var -> (int) constraints.stream()
                             .filter(constr -> constr.getVar1().equals(var) || constr.getVar2().equals(var)).count())
@@ -97,6 +135,22 @@ public class BacktrackingSolver<T> {
                             .filter(constr -> constr.getVar1().equals(var) || constr.getVar2().equals(var)).count())
                     .collect(Collectors.toList())
                     .get(0);
+
+            /*
+            int largestNumberOfConstraints = 0;
+            Variable<T> chosen = null;
+            for(Variable<T> var : unassignedVariables){
+                int nConstr = 0;
+                for(Constraint<T> constr : constraints){
+                    if(constr.getVar1().equals(var) || constr.getVar2().equals(var)) nConstr++;
+                }
+                if(nConstr >= largestNumberOfConstraints){
+                    largestNumberOfConstraints = nConstr;
+                    chosen = var;
+                }
+            }
+            return chosen;
+             */
         }
 
         return new ArrayList<>(unassignedVariables).get(0);

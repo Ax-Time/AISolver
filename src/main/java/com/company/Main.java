@@ -1,19 +1,38 @@
 package com.company;
 
-import csp.base_classes.csp_solvers.BacktrackingSolver;
-import csp.sudoku.SudokuCSP;
+import exceptions.NoSolutionException;
+import search_problems.base_classes.Action;
+import search_problems.eight_puzzle.EightPuzzleState;
+import search_problems.solvers.BFS_Solver;
 
 import java.io.FileNotFoundException;
+import java.util.List;
 
 public class Main {
 
     public static void main(String[] args) throws FileNotFoundException {
-        /* Sudoku Test */
-        String sudokuTestPath = "C:\\Users\\giaco\\Desktop\\CSprojects\\JAVA projects\\FAI\\src\\test\\sudokuTestInput.txt";
+        /* Eight Puzzle Test */
+        EightPuzzleState startingState = new EightPuzzleState();
+        startingState = startingState.shuffle(1000);
+
+        System.out.println("Starting state:");
+        System.out.println(startingState);
+        BFS_Solver bfs_solver = new BFS_Solver();
+        try {
+            List<Action> actionsToSolution = bfs_solver.solve(startingState);
+            System.out.println("Solution:");
+            System.out.println(actionsToSolution);
+        } catch (NoSolutionException e) {
+            System.out.println("No solution was found for this problem.");
+        }
+        /**/
+
+        /* Sudoku Test
+        String sudokuTestPath = ""; // path to sudoku input file (example in the test folder)
 
         SudokuCSP sudokuCSP = new SudokuCSP(sudokuTestPath);
-        BacktrackingSolver<Integer> solver = new BacktrackingSolver<>();
-        System.out.println(solver.solve(sudokuCSP));
-        /* */
+        BacktrackingSolver<Integer> bktrkSolver = new BacktrackingSolver<>();
+        System.out.println(bktrkSolver.solve(sudokuCSP));
+        */
     }
 }
