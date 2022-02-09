@@ -6,8 +6,8 @@ import search_problems.base_classes.State;
 import java.util.*;
 
 public class EightPuzzleState implements State {
-    private int[][] board;
-    private int zeroRow, zeroCol;
+    protected int[][] board;
+    protected int zeroRow, zeroCol;
 
     public EightPuzzleState() {
         board = new int[3][3];
@@ -48,6 +48,23 @@ public class EightPuzzleState implements State {
     }
 
     @Override
+    public double eval() {
+        // Implement Manhattan distance heuristic
+        // Calculate weighted average of Manhattan distances
+        double sum = 0;
+        for(int i = 0; i < 3; i++){
+            for(int j = 0; j < 3; j++){
+                int value = board[i][j];
+                int correctRow = value / 3;
+                int correctCol = value % 3;
+                sum += Math.abs(i - correctRow) + Math.abs(j - correctCol);
+            }
+        }
+
+        return sum / 9;
+    }
+
+    @Override
     public boolean isGoal() {
         for(int i = 0; i < 3; i++){
             for(int j = 0; j < 3; j++){
@@ -63,13 +80,13 @@ public class EightPuzzleState implements State {
 
         // Create actions
         // Up
-        if(zeroRow >= 1) actions.add(new EightPuzzleAction(zeroRow - 1, zeroCol));
+        if(zeroRow >= 1) actions.add(new EightPuzzleAction(zeroRow - 1, zeroCol, 1));
         // Down
-        if(zeroRow <= 1) actions.add(new EightPuzzleAction(zeroRow + 1, zeroCol));
+        if(zeroRow <= 1) actions.add(new EightPuzzleAction(zeroRow + 1, zeroCol, 1));
         // Left
-        if(zeroCol >= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol - 1));
+        if(zeroCol >= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol - 1, 1));
         // Right
-        if(zeroCol <= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol + 1));
+        if(zeroCol <= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol + 1, 1));
 
         return actions;
     }

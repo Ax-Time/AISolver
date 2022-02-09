@@ -4,12 +4,13 @@ import csp.base_classes.Assignment;
 import csp.base_classes.CSP;
 import csp.base_classes.Constraint;
 import csp.base_classes.Variable;
+import exceptions.NoSolutionException;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class BacktrackingSolver<T> {
-    public Assignment<T> solve(CSP<T> csp){
+    public Assignment<T> solve(CSP<T> csp) throws NoSolutionException {
         Set<Variable<T>> variables = new HashSet<>();
 
         csp.getVariables().forEach(var -> variables.add(var.clone()));
@@ -26,7 +27,11 @@ public class BacktrackingSolver<T> {
             }
         }
 
-        return backtrack(variables, csp.getConstraints(), startingAssignment);
+        Assignment<T> solution = backtrack(variables, csp.getConstraints(), startingAssignment);
+
+        if(solution == null) throw new NoSolutionException();
+
+        return solution;
     }
 
     private Assignment<T> backtrack(

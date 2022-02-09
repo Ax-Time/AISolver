@@ -7,10 +7,7 @@ import search_problems.base_classes.State;
 
 import java.util.*;
 
-public class BFS_Solver {
-    /**
-     * @return list of actions to get from starting state to goal
-     */
+public class AStar_Solver {
     public static List<Action> solve(State startingState) throws NoSolutionException {
         List<Action> actionsToSolution = new LinkedList<>();
         Node goalNode = findGoal(startingState);
@@ -23,21 +20,19 @@ public class BFS_Solver {
         return actionsToSolution;
     }
 
-    private static Node findGoal(State startingState){
+    private static Node findGoal(State startingState) {
         Node startingNode = new Node(startingState);
-        if(startingNode.getState().isGoal()) return startingNode;
-        Queue<Node> frontier = new LinkedList<>();
-            frontier.add(startingNode);
-        Set<Node> reached = new HashSet<>();
-            reached.add(startingNode);
+        PriorityQueue<Node> frontier = new PriorityQueue<>(); frontier.add(startingNode);
+        Map<State, Node> reached = new HashMap<>();
 
         while(!frontier.isEmpty()){
             Node curr = frontier.poll();
+            if(curr.getState().isGoal()) return curr;
             curr.generateChildren();
             for(Node child : curr.getChildren()){
-                if(child.getState().isGoal()) return child;
-                if(!reached.contains(child)){
-                    reached.add(child);
+                State s = child.getState();
+                if(!reached.keySet().contains(s) || child.getEval() < reached.get(s).getEval()){
+                    reached.put(s, child);
                     frontier.add(child);
                 }
             }

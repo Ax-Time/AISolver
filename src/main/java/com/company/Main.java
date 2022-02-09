@@ -3,7 +3,7 @@ package com.company;
 import exceptions.NoSolutionException;
 import search_problems.base_classes.Action;
 import search_problems.eight_puzzle.EightPuzzleState;
-import search_problems.solvers.BFS_Solver;
+import search_problems.solvers.AStar_Solver;
 
 import java.io.FileNotFoundException;
 import java.util.List;
@@ -17,9 +17,9 @@ public class Main {
 
         System.out.println("Starting state:");
         System.out.println(startingState);
-        BFS_Solver bfs_solver = new BFS_Solver();
         try {
-            List<Action> actionsToSolution = bfs_solver.solve(startingState);
+            List<Action> actionsToSolution = AStar_Solver.solve(startingState); // BFS_Solver.solve(startingState);
+
             System.out.println("Solution:");
             System.out.println(actionsToSolution);
         } catch (NoSolutionException e) {

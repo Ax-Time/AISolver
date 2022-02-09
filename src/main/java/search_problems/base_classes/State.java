@@ -7,6 +7,5 @@ public interface State {
     public List<Action> getActions();
     public State applyAction(Action action);
     public State clone();
-
-    public static int getCost(State src, State dst, Action action) { return 1; }
+    public double eval();
 }
