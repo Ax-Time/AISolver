@@ -14,7 +14,7 @@ public class Variable<T> {
     }
 
     public Set<T> getCurrentDomain(){
-        return new HashSet<>(domain);
+        return domain;
     }
 
     public void removeFromDomain(T value){

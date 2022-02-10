@@ -49,7 +49,7 @@ public class EightPuzzleState implements State {
 
     @Override
     public double eval() {
-        // Implement Manhattan distance heuristic
+        // Implement Manhattan distance heuristic (x2)
         // Calculate weighted average of Manhattan distances
         double sum = 0;
         for(int i = 0; i < 3; i++){
@@ -61,7 +61,7 @@ public class EightPuzzleState implements State {
             }
         }
 
-        return sum / 9;
+        return sum;
     }
 
     @Override
@@ -77,16 +77,17 @@ public class EightPuzzleState implements State {
     @Override
     public List<Action> getActions() {
         List<Action> actions = new ArrayList<>(4);
+        double actionCost = 0.1;
 
         // Create actions
         // Up
-        if(zeroRow >= 1) actions.add(new EightPuzzleAction(zeroRow - 1, zeroCol, 1));
+        if(zeroRow >= 1) actions.add(new EightPuzzleAction(zeroRow - 1, zeroCol, actionCost));
         // Down
-        if(zeroRow <= 1) actions.add(new EightPuzzleAction(zeroRow + 1, zeroCol, 1));
+        if(zeroRow <= 1) actions.add(new EightPuzzleAction(zeroRow + 1, zeroCol, actionCost));
         // Left
-        if(zeroCol >= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol - 1, 1));
+        if(zeroCol >= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol - 1, actionCost));
         // Right
-        if(zeroCol <= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol + 1, 1));
+        if(zeroCol <= 1) actions.add(new EightPuzzleAction(zeroRow, zeroCol + 1, actionCost));
 
         return actions;
     }

@@ -12,6 +12,11 @@ public class Assignment<T>{
         this.variableValueMap = new HashMap<>();
     }
 
+    public Assignment(Assignment<T> assignment){
+        this.variableValueMap = new HashMap<>();
+        assignment.variableValueMap.keySet().forEach(key -> this.variableValueMap.put(key, assignment.variableValueMap.get(key)));
+    }
+
     /**
      * Performs the assignment { var = value }
      * @param var the variable to be assigned
@@ -35,6 +40,10 @@ public class Assignment<T>{
      */
     public Set<Variable<T>> getAssignedVariables() {
         return new HashSet<>(variableValueMap.keySet());
+    }
+
+    public boolean isVariableAssigned(Variable<T> var){
+        return variableValueMap.containsKey(var);
     }
 
     /**

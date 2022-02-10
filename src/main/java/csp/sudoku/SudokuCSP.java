@@ -1,5 +1,6 @@
 package csp.sudoku;
 
+import csp.base_classes.Assignment;
 import csp.base_classes.CSP;
 import csp.base_classes.Constraint;
 import csp.base_classes.Variable;
@@ -142,5 +143,26 @@ public class SudokuCSP extends CSP<Integer> {
 
     private int getSudokuCol(Variable<Integer> sudokuVar){
         return (int)sudokuVar.getName().toCharArray()[1] - (int)'1';
+    }
+
+    public static void printSudoku(Assignment<Integer> assignment){
+        String s = "";
+        for(int i = 0; i < 9; i++){
+            if(i % 3 == 0) s += "_____________________________________\n";
+            for(int j = 0; j < 9; j++){
+                int finalI = i;
+                int finalJ = j;
+                if(j % 3 == 0) s += "|  ";
+                s += assignment.getAssignedVariables().stream()
+                        .filter(var -> (int)var.getName().toCharArray()[0] - (int)'A' == finalI && (int)var.getName().toCharArray()[1] - (int)'1' == finalJ)
+                        .map(assignment::getValueFor)
+                        .collect(Collectors.toList())
+                        .get(0) + "  ";
+                if(j == 8) s += "|";
+            }
+            s += '\n';
+        }
+        s += "_____________________________________\n";
+        System.out.println(s);
     }
 }

@@ -1,5 +1,6 @@
 package csp.solvers;
 
+
 import csp.base_classes.Assignment;
 import csp.base_classes.CSP;
 import csp.base_classes.Constraint;
@@ -11,96 +12,118 @@ import java.util.stream.Collectors;
 
 public class BacktrackingSolver<T> {
     public Assignment<T> solve(CSP<T> csp) throws NoSolutionException {
-        Set<Variable<T>> variables = new HashSet<>();
-
-        csp.getVariables().forEach(var -> variables.add(var.clone()));
-        /*
-        for(Variable<T> var : csp.getVariables()){
-            variables.add(var.clone());
-        }
-         */
-
+        CSP<T> cspClone = new CSP<>(csp);
         Assignment<T> startingAssignment = new Assignment<>();
-        for(Variable<T> var : variables){
-            if(var.getCurrentDomain().size() == 1){
-                startingAssignment.assign(var, var.getCurrentDomain().stream().toList().get(0));
-            }
-        }
-
-        Assignment<T> solution = backtrack(variables, csp.getConstraints(), startingAssignment);
-
-        if(solution == null) throw new NoSolutionException();
-
-        return solution;
+        Assignment<T> result = backtrack(cspClone, startingAssignment);
+        if(result == null) throw new NoSolutionException();
+        return result;
     }
 
-    private Assignment<T> backtrack(
-            Set<Variable<T>> variables,
-            List<Constraint<T>> constraints,
-            Assignment<T> assignment)
-    {
-        // Display progress info:
-        // System.out.println("Progress: " + (int)(assignment.getAssignedVariables().size() / (float)variables.size() * 100.0) + "%");
-        if(assignment.getAssignedVariables().equals(variables)) return assignment; // Assignment is complete
-        Variable<T> var = selectUnassignedVariable(variables, constraints, assignment);
-        Set<T> oldVarDomain = var.getCurrentDomain();
 
-        for(T value : orderByLeastConstrainingValue(var, constraints)){
-            assignment.assign(var, value);
-            if(isAssignmentConsistent(assignment, constraints)) {
-                var.setDomain(new HashSet<>(List.of(value)));
-
-                Set<Variable<T>> oldVariables = new HashSet<>();
-
-                variables.forEach(v -> oldVariables.add(v.clone()));
-                /*
-                for(Variable<T> v : variables){
-                    oldVariables.add(v.clone());
-                }*/
-
-                if (AC3(variables, constraints)) {
-                    Assignment<T> result = backtrack(variables, constraints, assignment);
-                    if (result != null) return result;
-                }
-
-                variables = oldVariables;
-                var.setDomain(oldVarDomain);
-            }
-            assignment.unAssign(var);
+    private Assignment<T> backtrack(CSP<T> csp, Assignment<T> assignment) {
+        if(assignment.getAssignedVariables().equals(csp.getVariables())) return assignment;
+        Variable<T> chosen = selectUnassignedVariable(csp, assignment);
+        if(!AC3(csp)) return null;
+        for(T value : orderDomainValues(csp, chosen, assignment)){
+            Assignment<T> newAssignment = new Assignment<>(assignment);
+            newAssignment.assign(chosen, value);
+            // When you assign a variable, reduce its domain to only the value assigned in the clone csp
+            CSP<T> cspClone = new CSP<>(csp);
+                cspClone.getVariables().stream().filter(v -> v.equals(chosen)).findFirst().get().setDomain(new HashSet<>(List.of(value)));
+            Assignment<T> result = backtrack(cspClone, newAssignment);
+            if (result != null) return result;
         }
 
         return null;
     }
 
-    private boolean isAssignmentConsistent(Assignment<T> assignment, List<Constraint<T>> constraints){
-        for(Constraint<T> constr : constraints){
-            if(!constr.test(assignment)) return false;
+    private boolean isVariableConsistentWithAssignment(Variable<T> chosen, Assignment<T> assignment, CSP<T> csp) {
+        List<Constraint<T>> constraintsThatInvolveChosen = csp.getConstraints().stream()
+                .parallel()
+                .filter(constr ->
+                        assignment.isVariableAssigned(constr.getVar1()) &&
+                        assignment.isVariableAssigned(constr.getVar2()) &&
+                        (constr.getVar1().equals(chosen) || constr.getVar2().equals(chosen))
+                ).collect(Collectors.toList());
+
+        return constraintsThatInvolveChosen.stream()
+                .parallel()
+                .allMatch(constr -> constr.getConstraintTester().apply(
+                assignment.getValueFor(constr.getVar1()),
+                assignment.getValueFor(constr.getVar2())
+        ));
+    }
+
+
+    public boolean AC3(CSP<T> csp){
+        Queue<Constraint<T>> constraintQueue = new LinkedList<>();
+        for(Constraint<T> constr : csp.getConstraints()){
+            constraintQueue.add(new Constraint<>(constr.getVar1(), constr.getVar2(), constr.getConstraintTester()));
+            constraintQueue.add(new Constraint<>(constr.getVar2(), constr.getVar1(), constr.getConstraintTester()));
         }
+
+        while(!constraintQueue.isEmpty()){
+            Constraint<T> curr = constraintQueue.poll();
+            if(AC3_Revise(csp, curr)){
+                if(curr.getVar1().getCurrentDomain().size() == 0) return false;
+                csp.getConstraints().stream()
+                        .filter(constr -> constr.getVar2().equals(curr.getVar1()) && !constr.getVar1().equals(constr.getVar2()))
+                        .forEach(constraintQueue::add);
+            }
+        }
+
         return true;
     }
 
-    // TODO: implement the least-constraining-value heuristic
-    private List<T> orderByLeastConstrainingValue(Variable<T> variable, List<Constraint<T>> constraints){
-        return variable.getCurrentDomain().stream().toList();
-    }
+    private boolean AC3_Revise(CSP<T> csp, Constraint<T> curr) {
+        boolean revised = false;
+        Set<T> toRemove = new HashSet<>();
+        for(T value1 : curr.getVar1().getCurrentDomain()){
+            boolean constrSatisfied = false;
+            for(T value2 : curr.getVar2().getCurrentDomain()){
+                if(curr.getConstraintTester().apply(value1, value2)){
+                    constrSatisfied = true;
+                    break;
+                }
+            }
 
-    private Variable<T> selectUnassignedVariable(
-            Set<Variable<T>> variables,
-            List<Constraint<T>> constraints,
-            Assignment<T> assignment
-    )
-    {
-        Set<Variable<T>> unassignedVariables = variables.stream()
-                .filter(var -> !assignment.getAssignedVariables().contains(var))
-                .collect(Collectors.toSet());
-        /*
-        Set<Variable<T>> unassignedVariables = new HashSet<>();
-        for(Variable<T> var : variables){
-            if(!assignment.getAssignedVariables().contains(var)){
-                unassignedVariables.add(var);
+            if(!constrSatisfied){
+                toRemove.add(value1);
+                revised = true;
             }
         }
+        for(T value : toRemove){
+            curr.getVar1().removeFromDomain(value);
+        }
+        return revised;
+    }
+
+    // TODO: implement least-costraining-value heuristic
+    private List<T> orderDomainValues(CSP<T> csp, Variable<T> var, Assignment<T> assignment) {
+        /*
+        Map<T, Integer> varValueToHeuristicScore = new HashMap<>(); // maps each value in the variable's domain to the number of values it rules out from the other domains if assigned
+        CSP<T> cloneCSP = new CSP<>(csp);
+        Variable<T> cloneVar = cloneCSP.getVariables().stream().filter(v -> v.equals(var)).findFirst().get();
+        Assignment<T> cloneAssignment = new Assignment<>();
+        assignment.getAssignedVariables().forEach(v1 -> cloneAssignment.assign(
+                cloneCSP.getVariables().stream().filter(v2 -> v2.equals(v1)).findFirst().get(),
+                assignment.getValueFor(v1)
+        ));
+        int sumOfDomainSizes = cloneCSP.getVariables().stream()
+                .mapToInt(v -> v.getCurrentDomain().size())
+                .reduce(0, Integer::sum);
+        for(T value : cloneVar.getCurrentDomain()){
+            cloneAssignment.assign(cloneVar, value);
+
+        }
          */
+        return var.getCurrentDomain().stream().toList();
+    }
+
+    private Variable<T> selectUnassignedVariable(CSP<T> csp, Assignment<T> assignment) {
+        Set<Variable<T>> unassignedVariables = csp.getVariables().stream()
+                .filter(var -> !assignment.getAssignedVariables().contains(var))
+                .collect(Collectors.toSet());
 
         // Apply Minimum-Remaining-Values heuristic (pick the variable with the smallest domain)
         OptionalInt minDomainSize = unassignedVariables.stream()
@@ -110,109 +133,23 @@ public class BacktrackingSolver<T> {
         unassignedVariables = unassignedVariables.stream()
                 .filter(var -> var.getCurrentDomain().size() == minDomainSize.getAsInt())
                 .collect(Collectors.toSet());
-         /*
-            Integer minDomainSize = null;
-        for(Variable<T> var : unassignedVariables){
-            if(minDomainSize == null){
-                minDomainSize = var.getCurrentDomain().size();
-            }
-            else{
-                int varDomainSize = var.getCurrentDomain().size();
-                minDomainSize = varDomainSize < minDomainSize ? varDomainSize : minDomainSize;
-            }
-        }
-        for(Variable<T> var : unassignedVariables){
-            if(var.getCurrentDomain().size() > minDomainSize) unassignedVariables.remove(var);
-        }
-        */
-        
 
-        if(unassignedVariables.size() > 1){
+
+        if (unassignedVariables.size() > 1) {
             // Apply Degree heuristic to break ties (pick the variable involved in the largest number of constraints)
 
             OptionalInt largestNumberOfConstraints = unassignedVariables.stream()
-                    .mapToInt(var -> (int) constraints.stream()
+                    .mapToInt(var -> (int) csp.getConstraints().stream()
                             .filter(constr -> constr.getVar1().equals(var) || constr.getVar2().equals(var)).count())
                     .max();
 
             return unassignedVariables.stream()
-                    .filter(var -> largestNumberOfConstraints.getAsInt() == constraints.stream()
+                    .filter(var -> largestNumberOfConstraints.getAsInt() == csp.getConstraints().stream()
                             .filter(constr -> constr.getVar1().equals(var) || constr.getVar2().equals(var)).count())
                     .collect(Collectors.toList())
                     .get(0);
-
-            /*
-            int largestNumberOfConstraints = 0;
-            Variable<T> chosen = null;
-            for(Variable<T> var : unassignedVariables){
-                int nConstr = 0;
-                for(Constraint<T> constr : constraints){
-                    if(constr.getVar1().equals(var) || constr.getVar2().equals(var)) nConstr++;
-                }
-                if(nConstr >= largestNumberOfConstraints){
-                    largestNumberOfConstraints = nConstr;
-                    chosen = var;
-                }
-            }
-            return chosen;
-             */
         }
 
         return new ArrayList<>(unassignedVariables).get(0);
-    }
-
-    /**
-     * Applies the AC-3 algorithm to the csp, reducing the domain of the variables to remove inconsistencies and to speed up
-     * the solving process.
-     *
-     * @param variables variables of the csp
-     * @param constraints constraints of the csp
-     * @return false if the csp is inconsistent, true otherwise
-     */
-    protected boolean AC3(Set<Variable<T>> variables, List<Constraint<T>> constraints){
-        Queue<Constraint<T>> constraintQueue = new LinkedList<>();
-        // Every constraint becomes two arcs, one for each direction
-        constraints.forEach(constr -> {
-                    constraintQueue.add(new Constraint<>(constr.getVar1(), constr.getVar2(), constr.getConstraintTester()));
-                    constraintQueue.add(new Constraint<>(constr.getVar2(), constr.getVar1(), constr.getConstraintTester()));
-                }
-        );
-
-        while(!constraintQueue.isEmpty()){
-            Constraint<T> currentConstraint = constraintQueue.poll(); // Constraint on (X, Y)
-            if(AC3_Revise(currentConstraint)){
-                if(currentConstraint.getVar1().getCurrentDomain().size() == 0) return false; // If X's domain is empty, return false
-                // Add all the constraints of type (Z, X) where Z != Y to the queue
-                constraints.stream()
-                        .filter(constr -> constr.getVar2().equals(currentConstraint.getVar1()) &&
-                                          !constr.getVar1().equals(currentConstraint.getVar2()))
-                        .forEach(constraintQueue::add);
-            }
-        }
-        return true;
-    }
-
-    private boolean AC3_Revise(Constraint<T> constraint /* constraint on (X, Y) */){
-        boolean revised = false;
-        for(T xValue : constraint.getVar1().getCurrentDomain()){
-            // For each value in X's domain
-            // Check if it exists a value in the domain of Y that satisfies the constraint on (X, Y) with { X = xValue }
-            // If such value doesn't exist, remove xValue from the domain of X and mark revised as true
-            boolean satisfied = false;
-            Assignment<T> assignment = new Assignment<>();
-            assignment.assign(constraint.getVar1(), xValue);
-
-            for(T yValue : constraint.getVar2().getCurrentDomain()){
-                assignment.assign(constraint.getVar2(), yValue);
-                if(constraint.test(assignment)) satisfied = true;
-                assignment.unAssign(constraint.getVar2());
-            }
-
-            if(!satisfied){
-                constraint.getVar1().removeFromDomain(xValue);
-                revised = true;
-            }
-        }
-        return revised;
     }
 }
